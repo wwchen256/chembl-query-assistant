@@ -9,12 +9,14 @@ st.title("ChEMBL Query Assistant")
 
 # --- Sidebar ---
 with st.sidebar:
-    api_key = st.text_input(
-        "OpenRouter API Key",
-        type="password",
-        value=OPENROUTER_API_KEY,
-        help="Set OPENROUTER_API_KEY env var or paste here.",
-    )
+    if OPENROUTER_API_KEY:
+        api_key = OPENROUTER_API_KEY
+    else:
+        api_key = st.text_input(
+            "OpenRouter API Key",
+            type="password",
+            help="Set OPENROUTER_API_KEY in Streamlit secrets or env var.",
+        )
 
     model_display = st.selectbox("Model", options=list(AVAILABLE_MODELS.keys()))
     model_id = AVAILABLE_MODELS[model_display]

@@ -1,7 +1,17 @@
 import os
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+
+def get_api_key():
+    """Get API key from Streamlit secrets (cloud) or env var (local)."""
+    try:
+        import streamlit as st
+        return st.secrets.get("OPENROUTER_API_KEY", "")
+    except Exception:
+        pass
+    return os.getenv("OPENROUTER_API_KEY", "")
+
+OPENROUTER_API_KEY = get_api_key()
 
 DEFAULT_MODEL = "qwen/qwen3-coder-next"
 
