@@ -85,6 +85,7 @@ def search_targets(
     gene_name=None,
     organism=None,
     target_type=None,
+    uniprot_id=None,
     limit=None,
 ):
     limit = _clamp_limit(limit)
@@ -97,6 +98,8 @@ def search_targets(
         filters["organism__icontains"] = organism
     if target_type:
         filters["target_type__iexact"] = target_type
+    if uniprot_id:
+        filters["target_components__accession"] = uniprot_id
 
     logger.info(f"search_targets filters={filters} limit={limit}")
 
@@ -130,6 +133,7 @@ def search_targets(
 def get_activities(
     target_chembl_id=None,
     molecule_chembl_id=None,
+    target_uniprot_id=None,
     standard_type=None,
     pchembl_value_min=None,
     assay_type=None,
@@ -137,6 +141,15 @@ def get_activities(
 ):
     limit = _clamp_limit(limit)
     activity = new_client.activity
+
+    # Resolve UniProt accession to ChEMBL target ID if needed
+    if target_uniprot_id and not target_chembl_id:
+        target = new_client.target
+        t_results = list(target.filter(target_components__accession=target_uniprot_id)[:1])
+        if t_results:
+            target_chembl_id = t_results[0].get("target_chembl_id")
+        else:
+            return [{"error": f"No ChEMBL target found for UniProt {target_uniprot_id}"}]
 
     filters = {}
     if target_chembl_id:

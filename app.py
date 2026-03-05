@@ -4,8 +4,8 @@ from config import AVAILABLE_MODELS, OPENROUTER_API_KEY
 from llm_client import ChEMBLAssistant
 from formatters import results_to_dataframe, dataframe_to_csv
 
-st.set_page_config(page_title="ChEMBL Query Assistant", layout="wide")
-st.title("ChEMBL Query Assistant")
+st.set_page_config(page_title="ChEMBL & OpenTargets Query Assistant", layout="wide")
+st.title("ChEMBL & OpenTargets Query Assistant")
 
 # --- Sidebar ---
 with st.sidebar:
@@ -33,6 +33,9 @@ with st.sidebar:
 - Show me molecules similar to aspirin
 - Search for drugs approved after 2020
 - Tell me about CHEMBL25
+- What drugs target BRAF?
+- What diseases are associated with TP53?
+- Resolve the target p38 alpha
 - Find targets related to serotonin in humans
 """
         )
@@ -59,7 +62,7 @@ for i, msg in enumerate(st.session_state.messages):
 
 # --- Handle new input ---
 if prompt := st.chat_input(
-    "Ask about molecules, targets, drugs...",
+    "Ask about molecules, targets, drugs, disease associations...",
     disabled=not api_key,
 ):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -67,7 +70,7 @@ if prompt := st.chat_input(
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Querying ChEMBL..."):
+        with st.spinner("Querying databases..."):
             try:
                 assistant = ChEMBLAssistant(api_key=api_key, model=model_id)
 

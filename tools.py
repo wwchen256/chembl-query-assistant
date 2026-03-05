@@ -2,6 +2,7 @@ import json
 import logging
 
 import chembl_service
+import ot_service
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,10 @@ TOOL_DEFINITIONS = [
                         "type": "string",
                         "description": "Target type: 'SINGLE PROTEIN', 'PROTEIN COMPLEX', 'PROTEIN FAMILY', 'ORGANISM', 'CELL-LINE'",
                     },
+                    "uniprot_id": {
+                        "type": "string",
+                        "description": "UniProt accession to filter by. E.g. 'P00533'. More precise than name search.",
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Max results. Default 20, max 100.",
@@ -123,6 +128,10 @@ TOOL_DEFINITIONS = [
                     "molecule_chembl_id": {
                         "type": "string",
                         "description": "ChEMBL ID of the molecule, e.g. 'CHEMBL25' for aspirin.",
+                    },
+                    "target_uniprot_id": {
+                        "type": "string",
+                        "description": "UniProt accession of the target. Alternative to target_chembl_id for more precise queries.",
                     },
                     "standard_type": {
                         "type": "string",
@@ -247,6 +256,81 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "resolve_target",
+            "description": (
+                "Resolve ANY target identifier (gene symbol, protein name, UniProt ID, "
+                "ChEMBL ID, or casual name like 'p38 alpha') to a standardized record with "
+                "gene symbol, Ensembl ID, UniProt ID, and ChEMBL target IDs. "
+                "ALWAYS call this first when a user mentions a target before using other tools."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Target identifier to resolve. Can be a gene symbol (EGFR, BRAF), "
+                            "casual name (p38 alpha), UniProt accession (P00533), or "
+                            "ChEMBL ID (CHEMBL203)."
+                        ),
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_drugs_for_target",
+            "description": (
+                "Get drugs that target a specific protein, including mechanism of action, "
+                "clinical phase, and disease indications. Requires an Ensembl gene ID "
+                "(from resolve_target). Uses OpenTargets data."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ensembl_id": {
+                        "type": "string",
+                        "description": "Ensembl gene ID, e.g. 'ENSG00000146648'. Get this from resolve_target.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results. Default 20, max 100.",
+                    },
+                },
+                "required": ["ensembl_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_disease_associations",
+            "description": (
+                "Get diseases associated with a target protein, ranked by association score. "
+                "Requires an Ensembl gene ID (from resolve_target). Uses OpenTargets data."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ensembl_id": {
+                        "type": "string",
+                        "description": "Ensembl gene ID, e.g. 'ENSG00000146648'. Get this from resolve_target.",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results. Default 20, max 100.",
+                    },
+                },
+                "required": ["ensembl_id"],
+            },
+        },
+    },
 ]
 
 _DISPATCH = {
@@ -257,6 +341,9 @@ _DISPATCH = {
     "get_approved_drugs": chembl_service.get_approved_drugs,
     "similarity_search": chembl_service.similarity_search,
     "substructure_search": chembl_service.substructure_search,
+    "resolve_target": ot_service.resolve_target,
+    "get_drugs_for_target": ot_service.get_drugs_for_target,
+    "get_disease_associations": ot_service.get_disease_associations,
 }
 
 

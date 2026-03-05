@@ -27,6 +27,17 @@ _DISPLAY_COLUMNS = {
     "substructure_search": [
         "molecule_chembl_id", "pref_name", "molecular_weight",
     ],
+    "resolve_target": [
+        "gene_symbol", "approved_name", "ensembl_id", "uniprot_id",
+        "chembl_target_ids", "common_names",
+    ],
+    "get_drugs_for_target": [
+        "drug_chembl_id", "drug_name", "drug_type",
+        "mechanism_of_action", "phase", "status", "disease",
+    ],
+    "get_disease_associations": [
+        "disease_id", "disease_name", "association_score",
+    ],
 }
 
 _COLUMN_LABELS = {
@@ -58,6 +69,24 @@ _COLUMN_LABELS = {
     "indication": "Indication",
     "assay_chembl_id": "Assay ID",
     "assay_type": "Assay Type",
+    "gene_symbol": "Gene Symbol",
+    "approved_name": "Approved Name",
+    "ensembl_id": "Ensembl ID",
+    "uniprot_id": "UniProt ID",
+    "chembl_target_ids": "ChEMBL Target IDs",
+    "common_names": "Aliases",
+    "drug_chembl_id": "Drug ChEMBL ID",
+    "drug_name": "Drug Name",
+    "drug_type": "Drug Type",
+    "mechanism_of_action": "Mechanism",
+    "phase": "Phase",
+    "status": "Status",
+    "disease": "Disease",
+    "disease_id": "Disease ID",
+    "disease_name": "Disease",
+    "association_score": "Score",
+    "source": "Source",
+    "query": "Query",
 }
 
 
