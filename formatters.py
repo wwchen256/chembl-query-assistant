@@ -36,11 +36,18 @@ def add_structure_column(df, size=(400, 300)):
 
     Priority:
     1. RDKit rendering from 'SMILES' column (best quality, works for any SMILES)
-    2. ChEMBL image API URL from 'ChEMBL ID' column (no package required)
+    2. ChEMBL image API URL from 'ChEMBL ID' column (fallback for missing/invalid SMILES)
     """
     if "SMILES" in df.columns and _RDKIT_AVAILABLE:
         df = df.copy()
         df.insert(0, "Structure", df["SMILES"].apply(lambda s: smiles_to_image_uri(s, size=size)))
+        # Fall back to ChEMBL image API for any rows where rdkit returned None
+        if "ChEMBL ID" in df.columns:
+            mask = df["Structure"].isna()
+            if mask.any():
+                df.loc[mask, "Structure"] = df.loc[mask, "ChEMBL ID"].apply(
+                    lambda cid: _CHEMBL_IMAGE_URL.format(cid) if cid and cid != "N/A" else None
+                )
         return df
     if "ChEMBL ID" in df.columns:
         df = df.copy()
