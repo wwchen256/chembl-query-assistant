@@ -3,7 +3,7 @@ import streamlit as st
 from config import AVAILABLE_MODELS, OPENROUTER_API_KEY
 from data_store import DataStore
 from llm_client import ChEMBLAssistant
-from formatters import results_to_dataframe, dataframe_to_csv, add_structure_column, _RDKIT_AVAILABLE, _RDKIT_ERROR
+from formatters import results_to_dataframe, dataframe_to_csv, add_structure_column, _RDKIT_AVAILABLE, _RDKIT_ERROR, smiles_to_image_uri
 
 st.set_page_config(page_title="ChEMBL & OpenTargets Query Assistant", layout="wide")
 st.title("ChEMBL & OpenTargets Query Assistant")
@@ -63,6 +63,12 @@ with st.sidebar:
 
     if _RDKIT_AVAILABLE:
         st.caption("RDKit: active")
+        _test_uri = smiles_to_image_uri("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
+        if _test_uri:
+            st.markdown(f'<img src="{_test_uri}" width="120">', unsafe_allow_html=True)
+            st.caption("↑ aspirin (image rendering test)")
+        else:
+            st.caption("⚠ rdkit active but image generation failed")
     else:
         st.caption("RDKit: unavailable (using ChEMBL image API)")
         if _RDKIT_ERROR:
