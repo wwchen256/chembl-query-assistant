@@ -101,7 +101,7 @@ if prompt := st.chat_input(
                                 csv,
                                 file_name=f"{tname}.csv",
                                 mime="text/csv",
-                                key=f"dl_new_{j}",
+                                key=f"dl_new_{len(st.session_state.messages)}_{j}",
                             )
 
                 msg_data = {
