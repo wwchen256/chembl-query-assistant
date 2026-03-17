@@ -83,9 +83,15 @@ def get_molecule_by_id(chembl_id):
 def get_molecules_by_ids(chembl_ids, limit=None):
     if not chembl_ids:
         return []
+    chembl_ids = list(dict.fromkeys(chembl_ids))  # deduplicate, preserve order
+    if limit is None and len(chembl_ids) > MAX_RESULTS:
+        logger.warning(
+            f"get_molecules_by_ids: {len(chembl_ids)} IDs requested but capped at {MAX_RESULTS}. "
+            "Pass limit= explicitly or paginate your input."
+        )
     limit = _clamp_limit(limit or len(chembl_ids))
     molecule = new_client.molecule
-    logger.info(f"get_molecules_by_ids count={len(chembl_ids)}")
+    logger.info(f"get_molecules_by_ids count={len(chembl_ids)} limit={limit}")
     results = list(molecule.filter(molecule_chembl_id__in=chembl_ids)[:limit])
     return [_extract_molecule_fields(m) for m in results]
 

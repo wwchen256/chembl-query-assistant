@@ -16,6 +16,7 @@ def test_get_molecules_by_ids_returns_fields():
         mock_client.molecule.filter.return_value = [mock_mol]
         from chembl_service import get_molecules_by_ids
         results = get_molecules_by_ids(["CHEMBL25"])
+    mock_client.molecule.filter.assert_called_once_with(molecule_chembl_id__in=["CHEMBL25"])
     assert len(results) == 1
     assert results[0]["molecule_chembl_id"] == "CHEMBL25"
     assert results[0]["canonical_smiles"] == "CC(=O)Oc1ccccc1C(=O)O"
