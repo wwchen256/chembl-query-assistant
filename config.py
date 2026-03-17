@@ -13,17 +13,11 @@ def get_api_key():
 
 OPENROUTER_API_KEY = get_api_key()
 
-DEFAULT_MODEL = "minimax/minimax-m2.5"
+DEFAULT_MODEL = "qwen/qwen3.5-397b-a17b"
 
 AVAILABLE_MODELS = {
-    "MiniMax M2.5": "minimax/minimax-m2.5",
     "Qwen3.5 397B": "qwen/qwen3.5-397b-a17b",
-    "Qwen3 Coder Next": "qwen/qwen3-coder-next",
-    "Gemini 2.5 Flash": "google/gemini-2.5-flash",
-    "Gemini 2.5 Pro": "google/gemini-2.5-pro",
-    "Claude Sonnet 4": "anthropic/claude-sonnet-4",
-    "GPT-4o Mini": "openai/gpt-4o-mini",
-    "DeepSeek V3": "deepseek/deepseek-chat",
+    "MiniMax M2.5": "minimax/minimax-m2.5",
 }
 
 CHEMBL_TIMEOUT = 30
