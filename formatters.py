@@ -3,12 +3,14 @@ import io
 
 import pandas as pd
 
+_RDKIT_AVAILABLE = False
+_RDKIT_ERROR = None
 try:
     from rdkit import Chem
     from rdkit.Chem import Draw
     _RDKIT_AVAILABLE = True
-except ImportError:
-    _RDKIT_AVAILABLE = False
+except Exception as e:
+    _RDKIT_ERROR = str(e)
 
 
 def smiles_to_image_uri(smiles, size=(400, 300)):

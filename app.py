@@ -3,7 +3,7 @@ import streamlit as st
 from config import AVAILABLE_MODELS, OPENROUTER_API_KEY
 from data_store import DataStore
 from llm_client import ChEMBLAssistant
-from formatters import results_to_dataframe, dataframe_to_csv, add_structure_column, _RDKIT_AVAILABLE
+from formatters import results_to_dataframe, dataframe_to_csv, add_structure_column, _RDKIT_AVAILABLE, _RDKIT_ERROR
 
 st.set_page_config(page_title="ChEMBL & OpenTargets Query Assistant", layout="wide")
 st.title("ChEMBL & OpenTargets Query Assistant")
@@ -59,7 +59,12 @@ with st.sidebar:
     model_display = st.selectbox("Model", options=list(AVAILABLE_MODELS.keys()))
     model_id = AVAILABLE_MODELS[model_display]
 
-    st.caption("RDKit: " + ("active" if _RDKIT_AVAILABLE else "unavailable (using ChEMBL image API)"))
+    if _RDKIT_AVAILABLE:
+        st.caption("RDKit: active")
+    else:
+        st.caption("RDKit: unavailable (using ChEMBL image API)")
+        if _RDKIT_ERROR:
+            st.caption(f"Import error: {_RDKIT_ERROR}")
 
     if st.button("Clear Conversation"):
         st.session_state.messages = []
