@@ -80,6 +80,16 @@ def get_molecule_by_id(chembl_id):
     return [_extract_molecule_fields(mol)]
 
 
+def get_molecules_by_ids(chembl_ids, limit=None):
+    if not chembl_ids:
+        return []
+    limit = _clamp_limit(limit or len(chembl_ids))
+    molecule = new_client.molecule
+    logger.info(f"get_molecules_by_ids count={len(chembl_ids)}")
+    results = list(molecule.filter(molecule_chembl_id__in=chembl_ids)[:limit])
+    return [_extract_molecule_fields(m) for m in results]
+
+
 def search_targets(
     name=None,
     gene_name=None,
