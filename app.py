@@ -130,7 +130,7 @@ if prompt := st.chat_input(
                 n = len(st.session_state.messages)
                 for j, (tname, tdata) in enumerate(new_tables.items()):
                     if tdata:
-                        with st.expander(f"Table: {tname} ({len(tdata)} rows)"):
+                        with st.expander(f"Table: {tname} ({len(tdata)} rows)", expanded=True):
                             render_table(tdata, tname, csv_key=f"dl_new_{n}_{j}")
 
                 st.session_state.messages.append({
