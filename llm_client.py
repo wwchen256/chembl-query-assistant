@@ -8,6 +8,7 @@ from config import (
     MAX_TOOL_ITERATIONS,
     SYSTEM_PROMPT,
 )
+from data_store import DataStore
 from tools import TOOL_DEFINITIONS, dispatch_tool
 
 logger = logging.getLogger(__name__)
@@ -21,20 +22,22 @@ class ChEMBLAssistant:
         )
         self.model = model
 
-    def process_message(self, messages):
+    def process_message(self, messages, data_store=None):
         """Run the tool-use conversation loop.
 
         Args:
             messages: list of {"role": ..., "content": ...} dicts (the chat history).
+            data_store: DataStore instance for persisting and joining tool results.
 
         Returns:
-            (response_text, raw_data, tool_name) where raw_data is the parsed
-            list of dicts from the last tool call (or None if no tools were used).
+            (response_text, new_tables) where new_tables is a dict of
+            {table_name: [records]} for all tables created/updated in this call.
         """
-        api_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+        if data_store is None:
+            data_store = DataStore()
 
-        last_tool_result = None
-        last_tool_name = None
+        api_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+        snapshot_before = data_store.snapshot()
 
         for iteration in range(MAX_TOOL_ITERATIONS):
             logger.info(f"LLM call iteration {iteration + 1}, model={self.model}")
@@ -50,9 +53,9 @@ class ChEMBLAssistant:
             message = choice.message
 
             if not message.tool_calls:
-                return message.content or "", last_tool_result, last_tool_name
+                new_tables = data_store.diff_since(snapshot_before)
+                return message.content or "", new_tables
 
-            # Append the assistant message with tool calls
             api_messages.append({
                 "role": "assistant",
                 "content": message.content or "",
@@ -69,7 +72,6 @@ class ChEMBLAssistant:
                 ],
             })
 
-            # Execute each tool call and collect results
             for tc in message.tool_calls:
                 tool_name = tc.function.name
                 try:
@@ -78,7 +80,7 @@ class ChEMBLAssistant:
                     arguments = {}
 
                 logger.info(f"Calling tool {tool_name} with {arguments}")
-                result_json = dispatch_tool(tool_name, arguments)
+                result_json = dispatch_tool(tool_name, arguments, data_store)
 
                 api_messages.append({
                     "role": "tool",
@@ -86,19 +88,10 @@ class ChEMBLAssistant:
                     "content": result_json,
                 })
 
-                # Track the last tool result for display
-                try:
-                    parsed = json.loads(result_json)
-                    if isinstance(parsed, list):
-                        last_tool_result = parsed
-                        last_tool_name = tool_name
-                except (json.JSONDecodeError, TypeError):
-                    pass
-
-        # If we exhausted iterations, make one final call without tools
         logger.warning("Max tool iterations reached, requesting final response")
         response = self.client.chat.completions.create(
             model=self.model,
             messages=api_messages,
         )
-        return response.choices[0].message.content or "", last_tool_result, last_tool_name
+        new_tables = data_store.diff_since(snapshot_before)
+        return response.choices[0].message.content or "", new_tables
