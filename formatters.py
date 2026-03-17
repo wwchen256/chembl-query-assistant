@@ -30,7 +30,7 @@ def smiles_to_image_uri(smiles, size=(400, 300)):
         return None
 
 
-_CHEMBL_IMAGE_URL = "https://www.ebi.ac.uk/chembl/api/data/image/{}"
+_CHEMBL_IMAGE_URL = "https://www.ebi.ac.uk/chembl/api/data/image/{}?format=png"
 
 
 def add_structure_column(df, size=(400, 300)):

@@ -32,7 +32,7 @@ def render_table(tdata, tname, csv_key):
             df,
             use_container_width=True,
             column_config={
-                "Structure": st.column_config.ImageColumn("Structure", width="medium")
+                "Structure": st.column_config.ImageColumn("Structure", width="large")
             },
         )
     else:
