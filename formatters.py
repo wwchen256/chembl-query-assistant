@@ -64,7 +64,7 @@ def add_structure_column(df, size=(400, 300)):
 _DISPLAY_COLUMNS = {
     "search_molecules": [
         "molecule_chembl_id", "pref_name", "max_phase",
-        "molecular_weight", "alogp", "ro5_violations",
+        "molecular_weight", "alogp", "ro5_violations", "canonical_smiles",
     ],
     "get_molecule_by_id": [
         "molecule_chembl_id", "pref_name", "molecule_type", "max_phase",
