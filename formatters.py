@@ -28,12 +28,26 @@ def smiles_to_image_uri(smiles, size=(400, 300)):
         return None
 
 
+_CHEMBL_IMAGE_URL = "https://www.ebi.ac.uk/chembl/api/data/image/{}"
+
+
 def add_structure_column(df, size=(400, 300)):
-    """Insert a 'Structure' column of base64 PNG data URIs if a 'SMILES' column exists."""
-    if "SMILES" not in df.columns or not _RDKIT_AVAILABLE:
+    """Insert a 'Structure' column of image URIs/URLs.
+
+    Priority:
+    1. RDKit rendering from 'SMILES' column (best quality, works for any SMILES)
+    2. ChEMBL image API URL from 'ChEMBL ID' column (no package required)
+    """
+    if "SMILES" in df.columns and _RDKIT_AVAILABLE:
+        df = df.copy()
+        df.insert(0, "Structure", df["SMILES"].apply(lambda s: smiles_to_image_uri(s, size=size)))
         return df
-    df = df.copy()
-    df.insert(0, "Structure", df["SMILES"].apply(lambda s: smiles_to_image_uri(s, size=size)))
+    if "ChEMBL ID" in df.columns:
+        df = df.copy()
+        df.insert(0, "Structure", df["ChEMBL ID"].apply(
+            lambda cid: _CHEMBL_IMAGE_URL.format(cid) if cid and cid != "N/A" else None
+        ))
+        return df
     return df
 
 # Columns to display for each tool type (ordered by importance)
