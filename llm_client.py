@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from openai import OpenAI
 
@@ -10,6 +11,8 @@ from config import (
 )
 from data_store import DataStore
 from tools import TOOL_DEFINITIONS, dispatch_tool
+
+_CHEMBL_ID_RE = re.compile(r'\bCHEMBL\d+\b', re.IGNORECASE)
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +41,15 @@ class ChEMBLAssistant:
 
         api_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
         snapshot_before = data_store.snapshot()
+
+        # Pre-fetch any ChEMBL IDs in the last user message so structure images always
+        # appear in the UI, even if the LLM answers from training knowledge.
+        last_user_content = next(
+            (m.get("content", "") for m in reversed(messages) if m.get("role") == "user"),
+            ""
+        )
+        for cid in _CHEMBL_ID_RE.findall(last_user_content)[:5]:
+            dispatch_tool("get_molecule_by_id", {"chembl_id": cid.upper()}, data_store)
 
         for iteration in range(MAX_TOOL_ITERATIONS):
             logger.info(f"LLM call iteration {iteration + 1}, model={self.model}")
