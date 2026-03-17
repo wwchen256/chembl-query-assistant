@@ -1,6 +1,7 @@
 import streamlit as st
 
 from config import AVAILABLE_MODELS, OPENROUTER_API_KEY
+from data_store import DataStore
 from llm_client import ChEMBLAssistant
 from formatters import results_to_dataframe, dataframe_to_csv
 
@@ -23,6 +24,7 @@ with st.sidebar:
 
     if st.button("Clear Conversation"):
         st.session_state.messages = []
+        st.session_state.data_store = DataStore()
         st.rerun()
 
     with st.expander("Example queries"):
@@ -35,30 +37,32 @@ with st.sidebar:
 - Tell me about CHEMBL25
 - What drugs target BRAF?
 - What diseases are associated with TP53?
-- Resolve the target p38 alpha
-- Find targets related to serotonin in humans
+- Find p38 inhibitors, show their structures and whether they're approved
 """
         )
 
 # --- Initialize state ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "data_store" not in st.session_state:
+    st.session_state.data_store = DataStore()
 
 # --- Display chat history ---
 for i, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-        if msg.get("data") is not None:
-            df = results_to_dataframe(msg["data"], msg.get("tool_name"))
-            st.dataframe(df, use_container_width=True)
-            csv = dataframe_to_csv(df)
-            st.download_button(
-                "Download CSV",
-                csv,
-                file_name=f"chembl_results_{i}.csv",
-                mime="text/csv",
-                key=f"download_{i}",
-            )
+        for j, (tname, tdata) in enumerate(msg.get("tables", {}).items()):
+            with st.expander(f"Table: {tname} ({len(tdata)} rows)"):
+                df = results_to_dataframe(tdata, tname)
+                st.dataframe(df, use_container_width=True)
+                csv = dataframe_to_csv(df)
+                st.download_button(
+                    f"Download {tname}.csv",
+                    csv,
+                    file_name=f"{tname}_{i}.csv",
+                    mime="text/csv",
+                    key=f"dl_{i}_{j}",
+                )
 
 # --- Handle new input ---
 if prompt := st.chat_input(
@@ -79,33 +83,37 @@ if prompt := st.chat_input(
                     for m in st.session_state.messages
                 ]
 
-                response_text, raw_data, tool_name = assistant.process_message(
-                    llm_messages
+                response_text, new_tables = assistant.process_message(
+                    llm_messages,
+                    data_store=st.session_state.data_store,
                 )
 
                 st.markdown(response_text)
 
-                msg_data = {"role": "assistant", "content": response_text}
+                for j, (tname, tdata) in enumerate(new_tables.items()):
+                    if tdata:
+                        with st.expander(f"Table: {tname} ({len(tdata)} rows)"):
+                            df = results_to_dataframe(tdata, tname)
+                            st.dataframe(df, use_container_width=True)
+                            csv = dataframe_to_csv(df)
+                            st.download_button(
+                                f"Download {tname}.csv",
+                                csv,
+                                file_name=f"{tname}.csv",
+                                mime="text/csv",
+                                key=f"dl_new_{j}",
+                            )
 
-                if raw_data:
-                    df = results_to_dataframe(raw_data, tool_name)
-                    st.dataframe(df, use_container_width=True)
-                    csv = dataframe_to_csv(df)
-                    st.download_button(
-                        "Download CSV",
-                        csv,
-                        file_name="chembl_results.csv",
-                        mime="text/csv",
-                        key=f"download_{len(st.session_state.messages)}",
-                    )
-                    msg_data["data"] = raw_data
-                    msg_data["tool_name"] = tool_name
-
+                msg_data = {
+                    "role": "assistant",
+                    "content": response_text,
+                    "tables": new_tables,
+                }
                 st.session_state.messages.append(msg_data)
 
             except Exception as e:
                 error_msg = f"Error: {e}"
                 st.error(error_msg)
                 st.session_state.messages.append(
-                    {"role": "assistant", "content": error_msg}
+                    {"role": "assistant", "content": error_msg, "tables": {}}
                 )
