@@ -17,6 +17,7 @@ DEFAULT_MODEL = "minimax/minimax-m2.5"
 
 AVAILABLE_MODELS = {
     "MiniMax M2.5": "minimax/minimax-m2.5",
+    "Qwen3.5 397B": "qwen/qwen3.5-397b-a17b",
     "Qwen3 Coder Next": "qwen/qwen3-coder-next",
     "Gemini 2.5 Flash": "google/gemini-2.5-flash",
     "Gemini 2.5 Pro": "google/gemini-2.5-pro",
