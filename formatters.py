@@ -1,4 +1,40 @@
+import base64
+import io
+
 import pandas as pd
+
+try:
+    from rdkit import Chem
+    from rdkit.Chem import Draw
+    _RDKIT_AVAILABLE = True
+except ImportError:
+    _RDKIT_AVAILABLE = False
+
+
+def smiles_to_image_uri(smiles, size=(400, 300)):
+    """Convert a SMILES string to a base64 PNG data URI. Returns None on failure."""
+    if not _RDKIT_AVAILABLE or not smiles or smiles == "N/A":
+        return None
+    try:
+        mol = Chem.MolFromSmiles(str(smiles))
+        if mol is None:
+            return None
+        img = Draw.MolToImage(mol, size=size)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        return f"data:image/png;base64,{b64}"
+    except Exception:
+        return None
+
+
+def add_structure_column(df, size=(400, 300)):
+    """Insert a 'Structure' column of base64 PNG data URIs if a 'SMILES' column exists."""
+    if "SMILES" not in df.columns or not _RDKIT_AVAILABLE:
+        return df
+    df = df.copy()
+    df.insert(0, "Structure", df["SMILES"].apply(lambda s: smiles_to_image_uri(s, size=size)))
+    return df
 
 # Columns to display for each tool type (ordered by importance)
 _DISPLAY_COLUMNS = {

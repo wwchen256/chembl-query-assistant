@@ -3,10 +3,47 @@ import streamlit as st
 from config import AVAILABLE_MODELS, OPENROUTER_API_KEY
 from data_store import DataStore
 from llm_client import ChEMBLAssistant
-from formatters import results_to_dataframe, dataframe_to_csv
+from formatters import results_to_dataframe, dataframe_to_csv, add_structure_column
 
 st.set_page_config(page_title="ChEMBL & OpenTargets Query Assistant", layout="wide")
 st.title("ChEMBL & OpenTargets Query Assistant")
+
+
+def render_table(tdata, tname, csv_key):
+    """Render a result table with optional structure images and a CSV download button."""
+    df = results_to_dataframe(tdata, tname)
+    df = add_structure_column(df)
+
+    has_structure = "Structure" in df.columns
+    df_for_csv = df.drop(columns=["Structure"]) if has_structure else df
+    csv = dataframe_to_csv(df_for_csv)
+
+    if has_structure and len(df) == 1:
+        # Single compound: large image above a plain table
+        uri = df["Structure"].iloc[0]
+        if uri:
+            st.image(uri, width=400)
+        st.dataframe(df_for_csv, use_container_width=True)
+    elif has_structure:
+        # Multiple compounds: inline thumbnails via ImageColumn
+        st.dataframe(
+            df,
+            use_container_width=True,
+            column_config={
+                "Structure": st.column_config.ImageColumn("Structure", width="medium")
+            },
+        )
+    else:
+        st.dataframe(df, use_container_width=True)
+
+    st.download_button(
+        f"Download {tname}.csv",
+        csv,
+        file_name=f"{tname}.csv",
+        mime="text/csv",
+        key=csv_key,
+    )
+
 
 # --- Sidebar ---
 with st.sidebar:
@@ -53,16 +90,7 @@ for i, msg in enumerate(st.session_state.messages):
         st.markdown(msg["content"])
         for j, (tname, tdata) in enumerate(msg.get("tables", {}).items()):
             with st.expander(f"Table: {tname} ({len(tdata)} rows)"):
-                df = results_to_dataframe(tdata, tname)
-                st.dataframe(df, use_container_width=True)
-                csv = dataframe_to_csv(df)
-                st.download_button(
-                    f"Download {tname}.csv",
-                    csv,
-                    file_name=f"{tname}_{i}.csv",
-                    mime="text/csv",
-                    key=f"dl_{i}_{j}",
-                )
+                render_table(tdata, tname, csv_key=f"dl_{i}_{j}")
 
 # --- Handle new input ---
 if prompt := st.chat_input(
@@ -90,26 +118,17 @@ if prompt := st.chat_input(
 
                 st.markdown(response_text)
 
+                n = len(st.session_state.messages)
                 for j, (tname, tdata) in enumerate(new_tables.items()):
                     if tdata:
                         with st.expander(f"Table: {tname} ({len(tdata)} rows)"):
-                            df = results_to_dataframe(tdata, tname)
-                            st.dataframe(df, use_container_width=True)
-                            csv = dataframe_to_csv(df)
-                            st.download_button(
-                                f"Download {tname}.csv",
-                                csv,
-                                file_name=f"{tname}.csv",
-                                mime="text/csv",
-                                key=f"dl_new_{len(st.session_state.messages)}_{j}",
-                            )
+                            render_table(tdata, tname, csv_key=f"dl_new_{n}_{j}")
 
-                msg_data = {
+                st.session_state.messages.append({
                     "role": "assistant",
                     "content": response_text,
                     "tables": new_tables,
-                }
-                st.session_state.messages.append(msg_data)
+                })
 
             except Exception as e:
                 error_msg = f"Error: {e}"
