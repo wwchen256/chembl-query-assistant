@@ -30,33 +30,34 @@ def smiles_to_image_uri(smiles, size=(400, 300)):
         return None
 
 
-_CHEMBL_IMAGE_URL = "https://www.ebi.ac.uk/chembl/api/data/image/{}?format=png"
+_CHEMBL_IMAGE_URL = "https://www.ebi.ac.uk/chembl/api/data/image/{}"
 
 
 def add_structure_column(df, size=(400, 300)):
-    """Insert a 'Structure' column of image URIs/URLs.
+    """Insert a 'Structure' column of image data URIs.
+
+    Only adds structures when a 'SMILES' column is present (i.e. molecular data
+    tables). Tables like get_activities have no SMILES and get no structure column.
 
     Priority:
-    1. RDKit rendering from 'SMILES' column (best quality, works for any SMILES)
-    2. ChEMBL image API URL from 'ChEMBL ID' column (fallback for missing/invalid SMILES)
+    1. RDKit rendering from 'SMILES' column (best quality, white background)
+    2. ChEMBL image API URL from 'ChEMBL ID' column (fallback for invalid SMILES)
     """
-    if "SMILES" in df.columns and _RDKIT_AVAILABLE:
-        df = df.copy()
+    if "SMILES" not in df.columns:
+        return df
+    df = df.copy()
+    if _RDKIT_AVAILABLE:
         df.insert(0, "Structure", df["SMILES"].apply(lambda s: smiles_to_image_uri(s, size=size)))
-        # Fall back to ChEMBL image API for any rows where rdkit returned None
-        if "ChEMBL ID" in df.columns:
-            mask = df["Structure"].isna()
-            if mask.any():
-                df.loc[mask, "Structure"] = df.loc[mask, "ChEMBL ID"].apply(
-                    lambda cid: _CHEMBL_IMAGE_URL.format(cid) if cid and cid != "N/A" else None
-                )
-        return df
+    else:
+        df.insert(0, "Structure", None)
+    # Fill any None entries with ChEMBL image API URL (covers rdkit failures and
+    # the rdkit-unavailable case when a ChEMBL ID is available)
     if "ChEMBL ID" in df.columns:
-        df = df.copy()
-        df.insert(0, "Structure", df["ChEMBL ID"].apply(
-            lambda cid: _CHEMBL_IMAGE_URL.format(cid) if cid and cid != "N/A" else None
-        ))
-        return df
+        mask = df["Structure"].isna()
+        if mask.any():
+            df.loc[mask, "Structure"] = df.loc[mask, "ChEMBL ID"].apply(
+                lambda cid: _CHEMBL_IMAGE_URL.format(cid) if cid and cid != "N/A" else None
+            )
     return df
 
 # Columns to display for each tool type (ordered by importance)
