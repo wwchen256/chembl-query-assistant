@@ -19,10 +19,12 @@ def render_table(tdata, tname, csv_key):
     csv = dataframe_to_csv(df_for_csv)
 
     if has_structure and len(df) == 1:
-        # Single compound: large image above a plain table
+        # Single compound: large image above a plain table.
+        # Use HTML <img> so the browser loads the src directly — works for both
+        # base64 data URIs (rdkit) and external URLs (ChEMBL image API).
         uri = df["Structure"].iloc[0]
         if uri:
-            st.image(uri, width=400)
+            st.markdown(f'<img src="{uri}" width="400">', unsafe_allow_html=True)
         st.dataframe(df_for_csv, use_container_width=True)
     elif has_structure:
         # Multiple compounds: inline thumbnails via ImageColumn
